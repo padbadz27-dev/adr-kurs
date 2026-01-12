@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>ADR Lernplattform KOMPLETT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root{
+ --primary:#6d28d9;
+ --secondary:#4f46e5;
+ --bg:#f4f6fb;
+ --card:#ffffff;
+ --darkbg:#0f172a;
+ --darkcard:#1e293b;
+}
+body{font-family:'Segoe UI',Arial,sans-serif;margin:0;background:var(--bg)}
+body.dark{background:var(--darkbg);color:#fff}
+header{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;padding:30px;text-align:center}
+nav{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;background:#fff;padding:15px;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+body.dark nav{background:var(--darkcard)}
+nav button{padding:10px 16px;border:none;border-radius:999px;background:var(--primary);color:#fff;font-weight:600;cursor:pointer}
+nav button:hover{opacity:.9}
+main{max-width:1200px;margin:30px auto;background:var(--card);padding:30px;border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,.1)}
+body.dark main{background:var(--darkcard)}
+h2{margin-top:0}
+.answers button{display:block;width:100%;margin:8px 0;padding:12px;border-radius:12px;border:1px solid #ddd;font-size:16px}
+.correct{background:#22c55e;color:#fff}
+.wrong{background:#ef4444;color:#fff}
+.section{display:none}
+.section.active{display:block}
+</style>
+</head>
+<body>
+<header>
+<div style="display:flex;flex-direction:column;align-items:center;gap:15px">
+<img src="badpadz-logo.png" alt="BadPadz Logo" style="width:120px;max-width:40%;filter:drop-shadow(0 0 20px rgba(255,0,255,.7))">
+<h1>Patricks ADR Kurs Übungen</h1>
+<p>Moderne Lern- & Prüfungsplattform für ADR-Gefahrgut</p>
+</div>
+</header>
+<nav>
+<button onclick="showSection('learn')">📘 Lernen</button>
+<button onclick="showSection('exam')">📝 Prüfung</button>
+<button onclick="showSection('wrong')">🔁 Fehlertrainer</button>
+<button onclick="showSection('labels')">⚠️ Gefahrzettel</button>
+<button onclick="showSection('un')">📦 UN-Nummern</button>
+<button onclick="showSection('overview')">📄 Übersicht</button>
+<button onclick="toggleDark()">🌙</button>
+</nav>
+<main>
+<section id="learn" class="section active">
+<h2>Lernmodus</h2>
+<p id="learnQ"></p>
+<div id="learnA" class="answers"></div>
+</section>
+<section id="exam" class="section">
+<h2>Prüfungsmodus</h2>
+<p id="examStatus"></p>
+<p id="examQ"></p>
+<div id="examA" class="answers"></div>
+</section>
+<section id="wrong" class="section">
+<h2>Fehlertrainer</h2>
+<div id="wrongContent"></div>
+</section>
+<section id="labels" class="section">
+<h2>Gefahrzettel</h2>
+<div id="labelsContent"></div>
+</section>
+<section id="un" class="section">
+<h2>UN-Nummern</h2>
+<div id="unContent"></div>
+</section>
+<section id="exam" class="section">
+<h2>Prüfungsmodus (inkl. UN & Gefahrzettel)</h2>
+<p id="examStatus"></p>
+<p id="examQ"></p>
+<div id="examA" class="answers"></div>
+</section>
+<section id="overview" class="section">
+<h2>ADR Klassen Übersicht</h2>
+<div id="overviewContent"></div>
+<button onclick="window.print()">🖨 Drucken</button>
+</section>
+</main>
+<script>
+const CLASSES={1:'Explosive Stoffe',2:'Gase',3:'Entzündbare Flüssigkeiten','4.1':'Entzündbare feste Stoffe','4.2':'Selbstentzündlich','4.3':'Reaktion mit Wasser','5.1':'Brandfördernd','5.2':'Organische Peroxide','6.1':'Giftig','6.2':'Ansteckungsgefährlich',7:'Radioaktiv',8:'Ätzend',9:'Verschiedene gefährliche Stoffe'};
+const UN=[
+{n:'1203',k:'3',t:'Benzin'},
+{n:'1202',k:'3',t:'Diesel'},
+{n:'1965',k:'2',t:'Gas'},
+{n:'1824',k:'8',t:'Natriumhydroxid'},
+{n:'2814',k:'6.1',t:'Giftiger Stoff'}];{n:'1203',k:3,t:'Benzin'},{n:'1202',k:3,t:'Diesel'},{n:'1965',k:2,t:'Gas'},{n:'1824',k:8,t:'Natriumhydroxid'}];
+let questions=Object.keys(CLASSES).map(k=>({k,text:CLASSES[k]}));
+let idx=0,wrong=[],examIndex=0,examScore=0,examQuestions=[];
+function showSection(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function toggleDark(){document.body.classList.toggle('dark');}
+function nextLearn(){const q=questions[idx%questions.length];document.getElementById('learnQ').innerText=`Welche Klasse betrifft: ${q.text}?`;const a=document.getElementById('learnA');a.innerHTML='';['Klasse '+q.k,'Klasse 1','Klasse 3','Klasse 8'].sort(()=>Math.random()-0.5).slice(0,3).forEach(o=>{const b=document.createElement('button');b.innerText=o;b.onclick=()=>{if(o!=='Klasse '+q.k)wrong.push(q);idx++;nextLearn();};a.appendChild(b);});}
+function buildExam(){
+ examQuestions=[];
+ // Klassenfragen
+ Object.keys(CLASSES).forEach(k=>examQuestions.push({type:'class',q:`Welche Klasse betrifft: ${CLASSES[k]}?`,c:`Klasse ${k}`,opts:shuffle([`Klasse ${k}`,'Klasse 1','Klasse 3','Klasse 8']).slice(0,3)}));
+ // UN-Fragen
+ UN.forEach(u=>examQuestions.push({type:'un',q:`UN ${u.n} gehört zu welcher Klasse? (${u.t})`,c:`Klasse ${u.k}`,opts:shuffle([`Klasse ${u.k}`,'Klasse 2','Klasse 3','Klasse 8']).slice(0,3)}));
+ // Gefahrzettel-Zuordnung
+ Object.keys(CLASSES).forEach(k=>examQuestions.push({type:'label',q:`Welcher Gefahrzettel gehört zu Klasse ${k}?`,c:k,opts:shuffle(Object.keys(CLASSES).slice(0,4))}));
+ examQuestions=shuffle(examQuestions).slice(0,20);
+ examIndex=0;examScore=0;
+ showExam();
+}
+
+function showExam(){
+ const q=examQuestions[examIndex];
+ document.getElementById('examStatus').innerText=`Frage ${examIndex+1}/${examQuestions.length}`;
+ document.getElementById('examQ').innerText=q.q;
+ const a=document.getElementById('examA');a.innerHTML='';
+ q.opts.forEach(o=>{const b=document.createElement('button');
+ b.innerText=q.type==='label'?`Gefahrzettel Klasse ${o}`:o;
+ b.onclick=()=>checkExam(o,q,b);
+ a.appendChild(b);});
+}
+
+function checkExam(ans,q,btn){
+ document.querySelectorAll('#examA button').forEach(b=>b.disabled=true);
+ if(String(ans)===String(q.c)){btn.classList.add('correct');examScore++;}
+ else{btn.classList.add('wrong');}
+ setTimeout(()=>{examIndex++;examIndex<examQuestions.length?showExam():endExam();},700);
+}
+
+function endExam(){
+ document.getElementById('examQ').innerText=examScore/examQuestions.length>=0.7?'✅ BESTANDEN':'❌ NICHT BESTANDEN';
+ document.getElementById('examStatus').innerText=`Ergebnis: ${examScore}/${examQuestions.length}`;
+}
+
+function load(){nextLearn();let o='';Object.keys(CLASSES).forEach(k=>o+=`<p><b>Klasse ${k}</b>: ${CLASSES[k]}</p>`);document.getElementById('overviewContent').innerHTML=o;let u='';UN.forEach(x=>u+=`<p>UN ${x.n} – Klasse ${x.k} – ${x.t}</p>`);document.getElementById('unContent').innerHTML=u;let l='';Object.keys(CLASSES).forEach(k=>l+=`<p>Klasse ${k}</p>`);document.getElementById('labelsContent').innerHTML=l;}
+buildExam();
+load();
+</script>
+</body>
+</html>
